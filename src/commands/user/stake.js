@@ -211,7 +211,7 @@ module.exports = {
           value: tournament[0],
         };
       });
-      interaction.respond(results);
+      interaction.respond(results.slice(0, 25));
     } catch (error) {
       console.error(error);
     }

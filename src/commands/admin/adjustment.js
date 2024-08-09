@@ -185,7 +185,7 @@ module.exports = {
             value: investor[0],
           };
         });
-        interaction.respond(results);
+        interaction.respond(results.slice(0,25));
       } catch (error) {}
     }
   },

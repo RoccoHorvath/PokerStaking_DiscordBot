@@ -10,9 +10,9 @@ module.exports = {
 
   run: async ({ interaction, client, handler }) => {
     try {
+      interaction.deferReply();
       const sheets = await connectToSheets(auth);
       const user = interaction.user.id;
-      interaction.deferReply();
 
       const tournamentRows = (
         await sheets.spreadsheets.values.get({
@@ -45,7 +45,7 @@ module.exports = {
       });
     } catch (error) {
       console.error(error);
-      interaction.reply({
+      interaction.editReply({
         content: `Error checking stake in tournaments`,
       });
     }
