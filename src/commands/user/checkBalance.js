@@ -1,7 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const spreadsheetId = process.env.spreadsheetId;
-const auth = require('../../index.js');
-const connectToSheets = require('../../utils/connectToSheets.js');
+const { auth, connectToSheets, getBalance } = require('../../utils/sheetsAPI');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -11,13 +10,10 @@ module.exports = {
   run: async ({ interaction, client, handler }) => {
     try {
       const sheets = await connectToSheets(auth);
-      const balance = (
-        await sheets.spreadsheets.values.get({
-          auth,
-          spreadsheetId,
-          range: 'Investor Balances!A:C',
-        })
-      ).data.values.filter((row) => row[0] === interaction.user.id)[0][2];
+      const balance = await getBalance(
+        { sheets, auth, spreadsheetId },
+        interaction.user.id
+      );
 
       interaction.reply({
         content: `Your account balance is ${balance}`,

@@ -1,7 +1,23 @@
 const { SlashCommandBuilder } = require('discord.js');
 const spreadsheetId = process.env.spreadsheetId;
-const auth = require('../../index.js');
-const connectToSheets = require('../../utils/connectToSheets.js');
+const {
+  addTransaction,
+  auth,
+  connectToSheets,
+  getActiveTournaments,
+  getTier,
+  getTournamentRow,
+  getStake,
+  getBalance,
+  endInteraction,
+} = require('../../utils/sheetsAPI');
+const {
+  tierMap,
+  toCurrency,
+  convertFromPercent,
+  convertToPercent,
+} = require('../../utils/converters');
+const tournamentAC = require('../../utils/autocomplete/tournamentsAC');
 let occupied = false;
 
 module.exports = {
@@ -52,39 +68,44 @@ module.exports = {
           content: 'Bot is busy. Please try again shortly.',
         });
       occupied = true;
+      await interaction.deferReply();
       const date = new Date();
       const sheets = await connectToSheets(auth);
-      const tierMap = {
-        JJ: 5,
-        QQ: 9,
-        KK: 13,
-        AA: 17,
+      const authObj = {
+        sheets,
+        auth,
+        spreadsheetId,
       };
-
       const tournament = interaction.options.getString('tournament');
       const amountStr = interaction.options.getString('amount');
-      const amount =
-        parseFloat(interaction.options.getString('amount').replace('%', '')) /
-        100;
-
+      const amount = convertFromPercent(amountStr);
       const user = interaction.options.getString('investor');
-
       const sell = interaction.options.getBoolean('sell');
-      const tournamentRows = (
-        await sheets.spreadsheets.values.get({
-          auth,
-          spreadsheetId,
-          range: 'Tournament Info!A:Q',
+      tournamentRows = (
+        await authObj.sheets.spreadsheets.values.get({
+          auth: authObj.auth,
+          spreadsheetId: authObj.spreadsheetId,
+          range: 'Tournament Info!A:B',
         })
-      ).data.values.filter((row) => row[0] === tournament);
+      ).data.values.filter((row) => row[1]);
+      const tournamentObj = tournamentRows.reduce((tourn, [value, key]) => {
+        tourn[key] = value;
+        return tourn;
+      }, {});
+      const regex = /^\d+$/;
+      const tournamentId = regex.test(tournament)
+        ? tournament
+        : tournamentObj[tournament];
+      const tournamentRow = await getTournamentRow(authObj, tournamentId);
+      
 
-      if (tournamentRows.length === 0) {
-        interaction.reply({
-          content: `${tournament} is not listed on the Tournament Info tab`,
-        });
-        return (occupied = false);
-      }
-      interaction.deferReply();
+      if (!tournamentRow || !tournamentRow[1])
+        return (occupied = await endInteraction(
+          interaction,
+          `${tournament} is not an ID or name of a tournament on the Tournament Info tab`
+        ));
+
+      console.log(`Looking up investor row for ${user}`)
       const investorRow = (
         await sheets.spreadsheets.values.get({
           auth,
@@ -92,83 +113,70 @@ module.exports = {
           range: 'Investor Info!A:C',
         })
       ).data.values.filter((row) => row[0] === user)[0];
+      
+      console.log(`Found investor row ${investorRow}`)
 
       const name = investorRow[1];
-      const tier = investorRow[2];
-      const tierCol = tierMap[tier];
-      const markup = tournamentRows[0][tierCol];
+      const tier = await getTier(authObj,investorRow[0]);
+      if (!tier)
+        return (occupied = await endInteraction(
+          interaction,
+          'User is not set up to invest in tournaments'
+        ));
 
-      await sheets.spreadsheets.values.append({
-        auth,
-        spreadsheetId,
-        range: 'Transactions!A:H',
-        valueInputOption: 'USER_ENTERED',
-        resource: {
-          values: [
-            [
-              user,
-              tournament,
-              sell ? amount * -1 : amount,
-              tier,
-              markup,
-              date.toLocaleDateString(),
-              date.toTimeString(),
-              interaction.id,
-            ],
-          ],
-        },
-      });
+      tierCol = tierMap[tier];
+      if (tier.error || !tierCol)
+        return (occupied = await endInteraction(
+          interaction,
+          'There was an error looking up the users tier.'
+        ));
+      const markup = tournamentRow[tierCol];
 
-      const newStake = (
-        await sheets.spreadsheets.values.get({
-          auth,
-          spreadsheetId,
-          range: 'Summary!A:C',
-        })
-      ).data.values.filter(
-        (row) => row[0] === user && row[1] === tournament
-      )[0][2];
+      await addTransaction(
+        authObj,
+        user,
+        tournamentId,
+        amount,
+        tier,
+        markup,
+        date,
+        interaction.id,
+        sell
+      );
 
-      interaction.editReply({
-        content: `Investment has been ${
+      const newStakeObj = await getStake(authObj, user, tournamentId);
+
+      return (occupied = await endInteraction(
+        interaction,
+        `Investment has been ${
           sell ? 'sold' : 'recorded'
-        }\n\tInvestor: ${name}\n\tTournament: ${tournament}\n\tInvestment: ${amountStr}\n\tTotal invesment in tournament: ${newStake}`,
-      });
-      return (occupied = false);
+        }\n\tInvestor: ${name}\n\tTournament: ${
+          tournamentRow[1]
+        }\n\tInvestment: ${amountStr}\n\t\n\tTotal investment in tournament: ${
+          newStakeObj.stake
+        }\n\tBuy-In: ${toCurrency(newStakeObj.buyin)}`
+      ));
     } catch (error) {
-      interaction.editReply({
-        content: `Could not verify new stake. Check that the transaction was recorded.`,
-      });
-      return (occupied = false);
+      console.log(error);
+      occupied = await endInteraction(
+        interaction,
+        `Could not verify new stake. Check that the transaction was recorded.`
+      );
     }
   },
 
   autocomplete: async ({ interaction, client, handler }) => {
-    const sheets = await connectToSheets(auth);
-    const focusedOption = interaction.options.getFocused(true);
-
-    if (focusedOption.name === 'tournament') {
-      try {
-        const tournamentRows = (
-          await sheets.spreadsheets.values.get({
-            auth,
-            spreadsheetId,
-            range: 'Active Tournaments!A:A',
-          })
-        ).data.values.filter((row) => row[0]);
-        const filteredChoices = tournamentRows.filter((tournament) =>
-          tournament[0].toLowerCase().includes(focusedOption.value)
-        );
-        const results = filteredChoices.map((tournament) => {
-          return {
-            name: tournament[0],
-            value: tournament[0],
-          };
-        });
-        interaction.respond(results);
-      } catch (error) {}
-    } else if (focusedOption.name === 'investor') {
-      try {
+    try {
+      const sheets = await connectToSheets(auth);
+      const focusedOption = interaction.options.getFocused(true);
+      const authObj = {
+        sheets,
+        auth,
+        spreadsheetId,
+      };
+      if (focusedOption.name === 'tournament') {
+        interaction.respond(await tournamentAC(authObj, interaction));
+      } else if (focusedOption.name === 'investor') {
         const investorRows = (
           await sheets.spreadsheets.values.get({
             auth,
@@ -185,8 +193,10 @@ module.exports = {
             value: investor[0],
           };
         });
-        interaction.respond(results.slice(0,25));
-      } catch (error) {}
+        interaction.respond(results.slice(0, 25));
+      }
+    } catch (error) {
+      console.log(error);
     }
   },
 };

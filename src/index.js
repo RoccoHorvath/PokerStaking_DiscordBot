@@ -1,5 +1,5 @@
 require('dotenv/config');
-const { google } = require('googleapis');
+
 const { Client, IntentsBitField } = require('discord.js');
 const { CommandKit } = require('commandkit');
 
@@ -19,10 +19,8 @@ new CommandKit({
   devUserIds: [],
 });
 
-const auth = new google.auth.GoogleAuth({
-  keyFile: 'credentials.json',
-  scopes: 'https://www.googleapis.com/auth/spreadsheets',
-});
+
+
+
 
 client.login(process.env.TOKEN);
-module.exports = auth;

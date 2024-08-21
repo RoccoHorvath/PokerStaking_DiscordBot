@@ -1,7 +1,18 @@
 const { SlashCommandBuilder } = require('discord.js');
 const spreadsheetId = process.env.spreadsheetId;
-const auth = require('../../index.js');
-const connectToSheets = require('../../utils/connectToSheets.js');
+const {
+  auth,
+  connectToSheets,
+  getActiveTournaments,
+  getTier,
+  getStake,
+  endInteraction,
+} = require('../../utils/sheetsAPI');
+const {
+  tierMap,
+  toCurrency,
+  convertPercent,
+} = require('../../utils/converters');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -10,39 +21,43 @@ module.exports = {
 
   run: async ({ interaction, client, handler }) => {
     try {
-      interaction.deferReply();
+      await interaction.deferReply();
       const sheets = await connectToSheets(auth);
       const user = interaction.user.id;
 
-      const tournamentRows = (
-        await sheets.spreadsheets.values.get({
-          auth,
-          spreadsheetId,
-          range: 'Active Tournaments!A:A',
-        })
-      ).data.values.filter((row) => row[0]);
-
-      let tournaments = new Set();
-      tournamentRows.forEach((row) => {
-        tournaments.add(row[0]);
+      const tournamentNameRow = await getActiveTournaments({
+        auth,
+        spreadsheetId,
+        sheets,
       });
-
+      const tournamentObj = tournamentNameRow.reduce((tourn, [key, value]) => {
+        tourn[key] = value;
+        return tourn;
+      }, {});
+      console.log(`Getting stake rows for user ${user}`);
       const stakeRows = (
         await sheets.spreadsheets.values.get({
           auth,
           spreadsheetId,
-          range: 'Summary!A:E',
+          range: 'Summary!A:F',
         })
-      ).data.values.filter((row) => row[0] === user && tournaments.has(row[1]));
-
+      ).data.values.filter((row) => row[0] === user && tournamentObj[row[1]]);
+      console.log(`Found rows:\n\t${stakeRows}`);
+      if (stakeRows.length == 0)
+        return await endInteraction(
+          interaction,
+          'No stake in upcoming tournaments.'
+        );
       let reply = '';
       for (const row of stakeRows) {
-        reply += `${row[1]}: ${row[2]}\n`;
+        reply += `${tournamentObj[row[1]]}:\n\tStake: ${
+          row[2]
+        }\n\tBuy-in: ${toCurrency(row[5])}\n`;
       }
-
-      interaction.editReply({
-        content: `Your investments in all upcoming tournaments:\n${reply}`,
-      });
+      return await endInteraction(
+        interaction,
+        `Your investments in all upcoming tournaments:\n${reply}`
+      );
     } catch (error) {
       console.error(error);
       interaction.editReply({
