@@ -49,6 +49,12 @@ module.exports = {
           });
         withdrawalAmount = balance;
       } else {
+        if(!amount)
+            {
+                return await interaction.editReply({
+                  content: `You must enter an amount or select max`,
+                });
+              }
         if (amount > balance) {
           return await interaction.editReply({
             content: `Amount requested is greater than account balance.\nBalance: ${balance}`,
