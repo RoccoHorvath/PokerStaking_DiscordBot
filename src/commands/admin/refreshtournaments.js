@@ -15,7 +15,7 @@ module.exports = {
           content: '#tournaments channel updated',
         });
       } else {
-        await interaction.reply({
+        await interaction.editReply({
           content:
             'tournamentsChannelId not found in .env file. #tournaments not updated',
         });
