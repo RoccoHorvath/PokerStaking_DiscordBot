@@ -45,16 +45,15 @@ async function tournaments(client, channelId) {
         const tierCol = tierMap[tier];
         tournamentObj[tournament[0]].tiers[tier].markup = tournament[tierCol];
         tournamentObj[tournament[0]].tiers[tier].maxStake =
-          tournament[tierCol + 2];
+          tournament[tierCol + 1];
         tournamentObj[tournament[0]].tiers[tier].availableStake =
-          tournament[tierCol + 3];
+          convertFromPercent(tournament[tierCol + 2]) - convertFromPercent(tournament[tierCol + 3]);
         tournamentObj[tournament[0]].tiers[tier].buyin = `${toCurrency(
           (tournament[tierCol] * tournament[2]) / 100
         )}`;
         console.log(tournamentObj[tournament[0]].tiers[tier]);
       }
     }
-
     let embeds = [];
     for (const tournament in tournamentObj) {
       if (tournament == '#N/A') continue;
@@ -64,15 +63,15 @@ async function tournaments(client, channelId) {
     }
     const lastMessage = (await channel.messages.fetch({ limit: 1 })).first();
 
-    if (lastMessage) {
-      await lastMessage.delete();
-      console.log(`Deleted the last message with ID: ${lastMessage.id}`);
-    }
+//    if (lastMessage) {
+//      await lastMessage.delete();
+//      console.log(`Deleted the last message with ID: ${lastMessage.id}`);
+//    }
 
     if (embeds.length) {
-      await channel.send({ embeds: embeds });
+      await lastMessage.edit({ embeds: embeds });
     } else {
-      await channel.send({
+      await lastMessage.edit({
         embeds: [
           new EmbedBuilder()
             .setTitle('No Upcoming Tournaments')
