@@ -83,8 +83,9 @@ async function tournaments(client, channelId) {
   } catch (error) {
     console.error(error);
     if (!channel) {
-        console.error(`Channel with ID ${channelId} not found.`);
-        return;}
+      console.error(`Channel with ID ${channelId} not found.`);
+      return;
+    }
 
     await channel.send({
       embeds: [

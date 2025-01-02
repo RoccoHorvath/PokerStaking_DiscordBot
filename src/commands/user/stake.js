@@ -142,9 +142,9 @@ module.exports = {
       };
       const limit = limitMap[tier];
       const balance = parseFloat(
-        (await getBalance(authObj, user)).replace('$', '')
+        (await getBalance(authObj, user)).replace('$', '').replace(',', '')
       );
-      if (!balance)
+      if (!balance && balance != 0)
         return (occupied = await endInteraction(
           interaction,
           'Could not verify balance'
