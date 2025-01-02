@@ -44,12 +44,12 @@ module.exports = {
       const method = interaction.options.getString('method');
       const max = interaction.options.getBoolean('max');
       console.log(balance);
+      if (balance <= 0)
+        return await interaction.editReply({
+          content: `You don't have enough to withdraw.\nBalance: $${balance}`,
+        });
       let withdrawalAmount;
       if (max) {
-        if (balance <= 0)
-          return await interaction.editReply({
-            content: `You don't have enough to withdraw.\nBalance: ${balance}`,
-          });
         withdrawalAmount = balance;
       } else {
         if (!amount) {
