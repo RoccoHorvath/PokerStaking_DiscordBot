@@ -13,7 +13,7 @@ function createTournamentEmbed(tournament) {
 
     embed.addFields({
       name: tier,
-      value: `Markup: ${tournament.tiers[tier].markup}\nBuy-In per 1%: ${tournament.tiers[tier].buyin}\nMax Stake: ${tournament.tiers[tier].maxStake}\nStake remaining: ${tournament.tiers[tier].availableStake}`,
+      value: `Markup: ${tournament.tiers[tier].markup}\nBuy-In per 1%: ${tournament.tiers[tier].buyin}\nMax Stake: ${tournament.tiers[tier].maxStake}\nStake remaining: ${tournament.tiers[tier].availableStake / 100}%`,
     });
   }
   };
