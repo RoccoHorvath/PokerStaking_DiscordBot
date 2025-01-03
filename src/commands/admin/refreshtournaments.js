@@ -3,7 +3,7 @@ const tournaments = require('./tournaments');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('torunaments')
+    .setName('tournaments')
     .setDescription('Refresh #tournaments channel'),
 // options: {deleted:true},
   run: async ({ interaction, client, handler }) => {

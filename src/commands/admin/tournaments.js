@@ -47,7 +47,8 @@ async function tournaments(client, channelId) {
         tournamentObj[tournament[0]].tiers[tier].maxStake =
           tournament[tierCol + 1];
         tournamentObj[tournament[0]].tiers[tier].availableStake =
-          convertFromPercent(tournament[tierCol + 2]) - convertFromPercent(tournament[tierCol + 3]);
+          convertFromPercent(tournament[tierCol + 2]) -
+          convertFromPercent(tournament[tierCol + 3]);
         tournamentObj[tournament[0]].tiers[tier].buyin = `${toCurrency(
           (tournament[tierCol] * tournament[2]) / 100
         )}`;
@@ -62,22 +63,30 @@ async function tournaments(client, channelId) {
       if (embed) embeds.push(embed);
     }
     const lastMessage = (await channel.messages.fetch({ limit: 1 })).first();
-
-//    if (lastMessage) {
-//      await lastMessage.delete();
-//      console.log(`Deleted the last message with ID: ${lastMessage.id}`);
-//    }
-
-    if (embeds.length) {
-      await lastMessage.edit({ embeds: embeds });
+    if (lastMessage) {
+      if (embeds.length) {
+        await lastMessage.edit({ embeds: embeds });
+      } else {
+        await lastMessage.edit({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle('No Upcoming Tournaments')
+              .setColor('#0099ff'),
+          ],
+        });
+      }
     } else {
-      await lastMessage.edit({
-        embeds: [
-          new EmbedBuilder()
-            .setTitle('No Upcoming Tournaments')
-            .setColor('#0099ff'),
-        ],
-      });
+      if (embeds.length) {
+        await channel.send({ embeds: embeds });
+      } else {
+        await channel.send({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle('No Upcoming Tournaments')
+              .setColor('#0099ff'),
+          ],
+        });
+      }
     }
   } catch (error) {
     console.error(error);
