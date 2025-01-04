@@ -7,7 +7,7 @@ module.exports = {
     .setDescription('Refresh #tournaments channel'),
   run: async ({ interaction, client, handler }) => {
     try {
-      const adminsString = process.env.adminRoles;
+      const adminsString = process.env.admins;
       const admins = JSON.parse(adminsString);
       if (!admins.includes(interaction.user.id))
         return interaction.reply({
