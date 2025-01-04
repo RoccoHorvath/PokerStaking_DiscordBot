@@ -8,15 +8,12 @@ module.exports = {
   run: async ({ interaction, client, handler }) => {
     try {
       const adminsString = process.env.adminRoles;
-      const adminRoles = JSON.parse(adminsString);
-      if (
-        !interaction.member.roles.cache.some((role) =>
-          adminRoles.includes(role.id)
-        )
-      )
+      const admins = JSON.parse(adminsString);
+      if (!admins.includes(interaction.user.id))
         return interaction.reply({
           content: 'You must be an admin to run this command',
         });
+
       await interaction.deferReply();
       if (process.env.tournamentsChannelId) {
         await tournaments(client, process.env.tournamentsChannelId);

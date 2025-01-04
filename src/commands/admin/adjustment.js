@@ -68,16 +68,14 @@ module.exports = {
           content: 'Bot is busy. Please try again shortly.',
         });
       occupied = true;
-      const adminsString = process.env.adminRoles;
-      const adminRoles = JSON.parse(adminsString);
-      if (
-        !interaction.member.roles.cache.some((role) =>
-          adminRoles.includes(role.id)
-        )
-      )
+
+      const adminsString = process.env.admins;
+      const admins = JSON.parse(adminsString);
+      if (!admins.includes(interaction.user.id))
         return interaction.reply({
           content: 'You must be an admin to run this command',
         });
+
       await interaction.deferReply();
       const date = new Date();
       const sheets = await connectToSheets(auth);
