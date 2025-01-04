@@ -18,7 +18,6 @@ new CommandKit({
   client,
   eventsPath: `${__dirname}/events`,
   commandsPath: `${__dirname}/commands`,
-  devUserIds: [],
 });
 
 client.login(process.env.TOKEN);

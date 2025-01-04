@@ -68,6 +68,16 @@ module.exports = {
           content: 'Bot is busy. Please try again shortly.',
         });
       occupied = true;
+      const adminsString = process.env.adminRoles;
+      const adminRoles = JSON.parse(adminsString);
+      if (
+        !interaction.member.roles.cache.some((role) =>
+          adminRoles.includes(role.id)
+        )
+      )
+        return interaction.reply({
+          content: 'You must be an admin to run this command',
+        });
       await interaction.deferReply();
       const date = new Date();
       const sheets = await connectToSheets(auth);
@@ -97,7 +107,6 @@ module.exports = {
         ? tournament
         : tournamentObj[tournament];
       const tournamentRow = await getTournamentRow(authObj, tournamentId);
-      
 
       if (!tournamentRow || !tournamentRow[1])
         return (occupied = await endInteraction(
@@ -105,7 +114,7 @@ module.exports = {
           `${tournament} is not an ID or name of a tournament on the Tournament Info tab`
         ));
 
-      console.log(`Looking up investor row for ${user}`)
+      console.log(`Looking up investor row for ${user}`);
       const investorRow = (
         await sheets.spreadsheets.values.get({
           auth,
@@ -113,11 +122,11 @@ module.exports = {
           range: 'Investor Info!A:C',
         })
       ).data.values.filter((row) => row[0] === user)[0];
-      
-      console.log(`Found investor row ${investorRow}`)
+
+      console.log(`Found investor row ${investorRow}`);
 
       const name = investorRow[1];
-      const tier = await getTier(authObj,investorRow[0]);
+      const tier = await getTier(authObj, investorRow[0]);
       if (!tier)
         return (occupied = await endInteraction(
           interaction,
@@ -131,6 +140,11 @@ module.exports = {
           'There was an error looking up the users tier.'
         ));
       const markup = tournamentRow[tierCol];
+      if (!markup)
+        return (occupied = await endInteraction(
+          interaction,
+          `There is no markup for tier: ${tier}. This will result in a buy in of $0.00. Transaction not recorded.`
+        ));
 
       await addTransaction(
         authObj,
@@ -145,6 +159,7 @@ module.exports = {
       );
 
       const newStakeObj = await getStake(authObj, user, tournamentId);
+      await tournaments(client, process.env.tournamentsChannelId);
 
       return (occupied = await endInteraction(
         interaction,

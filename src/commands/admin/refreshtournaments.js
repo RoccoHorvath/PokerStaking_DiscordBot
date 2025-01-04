@@ -5,9 +5,18 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('tournaments')
     .setDescription('Refresh #tournaments channel'),
-// options: {deleted:true},
   run: async ({ interaction, client, handler }) => {
     try {
+      const adminsString = process.env.adminRoles;
+      const adminRoles = JSON.parse(adminsString);
+      if (
+        !interaction.member.roles.cache.some((role) =>
+          adminRoles.includes(role.id)
+        )
+      )
+        return interaction.reply({
+          content: 'You must be an admin to run this command',
+        });
       await interaction.deferReply();
       if (process.env.tournamentsChannelId) {
         await tournaments(client, process.env.tournamentsChannelId);
@@ -27,5 +36,5 @@ module.exports = {
       });
     }
   },
-        options: {devOnly: true},
+  //options: {devOnly: true},
 };
