@@ -157,7 +157,6 @@ module.exports = {
       );
 
       const newStakeObj = await getStake(authObj, user, tournamentId);
-      await tournaments(client, process.env.tournamentsChannelId);
 
       return (occupied = await endInteraction(
         interaction,
@@ -182,13 +181,8 @@ module.exports = {
     try {
       const sheets = await connectToSheets(auth);
       const focusedOption = interaction.options.getFocused(true);
-      const authObj = {
-        sheets,
-        auth,
-        spreadsheetId,
-      };
       if (focusedOption.name === 'tournament') {
-        interaction.respond(await tournamentAC(authObj, interaction));
+        interaction.respond(await tournamentAC(interaction));
       } else if (focusedOption.name === 'investor') {
         const investorRows = (
           await sheets.spreadsheets.values.get({

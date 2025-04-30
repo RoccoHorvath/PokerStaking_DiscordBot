@@ -189,15 +189,9 @@ module.exports = {
     }
   },
 
-  autocomplete: async ({ interaction, client, handler }) => {
+  autocomplete: async ({ interaction }) => {
     try {
-      const sheets = await connectToSheets(auth);
-      const authObj = {
-        sheets,
-        auth,
-        spreadsheetId,
-      };
-      interaction.respond(await tournamentAC(authObj, interaction));
+      interaction.respond(await tournamentAC(interaction));
     } catch (error) {
       console.error(error);
     }

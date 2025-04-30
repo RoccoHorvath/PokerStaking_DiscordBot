@@ -13,6 +13,7 @@ const {
   convertToPercent,
 } = require('../../utils/converters');
 const createTournamentEmbed = require('../../utils/embeds/createTournamentEmbed');
+const { setTournaments } = require('../../utils/sheetsAPI/activeTournaments');
 
 async function tournaments(client, channelId) {
   try {
@@ -24,6 +25,7 @@ async function tournaments(client, channelId) {
     const sheets = await connectToSheets(auth);
     authObj = { sheets, auth, spreadsheetId };
     const tournaments = await getActiveTournaments(authObj);
+    setTournaments(tournaments);
     const tournamentObj = tournaments.reduce((tourn, [key, value]) => {
       tourn[key] = { name: value };
       return tourn;

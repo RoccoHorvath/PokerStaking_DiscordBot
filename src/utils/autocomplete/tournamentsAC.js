@@ -1,11 +1,8 @@
-const getActiveTournaments = require('../sheetsAPI/getActiveTournaments');
+const { getTournaments } = require('../sheetsAPI/activeTournaments');
 
-async function tournamentAC(authObj, interaction) {
-  const tournamentRows = await getActiveTournaments({
-    sheets: authObj.sheets,
-    auth: authObj.auth,
-    spreadsheetId: authObj.spreadsheetId,
-  });
+async function tournamentAC(interaction) {
+  const tournamentRows = getTournaments();
+  console.log(tournamentRows);
   try {
     const focusedTournamentOption = interaction.options
       .getString('tournament')
@@ -16,7 +13,8 @@ async function tournamentAC(authObj, interaction) {
     );
     const results = filteredChoices.map((tournament) => {
       return {
-        name: tournament[0] == '#N/A' ? 'No tournaments available' : tournament[1],
+        name:
+          tournament[0] == '#N/A' ? 'No tournaments available' : tournament[1],
         value: tournament[0],
       };
     });
